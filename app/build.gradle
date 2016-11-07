@@ -27,4 +27,10 @@ dependencies {
     compile files('libs/activation.jar')
     compile files('libs/additionnal.jar')
     compile files('libs/mail.jar')
+    compile 'com.googlecode.json-simple:json-simple:1.1'
+
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+
+    compile 'net.gotev:uploadservice:2.1'
 }

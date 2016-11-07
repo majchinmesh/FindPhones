@@ -1,11 +1,14 @@
 package com.lol.majchin.findphones;
 
+import android.app.ProgressDialog;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,10 +28,12 @@ import java.util.HashMap;
 import com.lol.majchin.findphones.HomeActivity ;
 
 
-public class LoginActivity extends AppCompatActivity implements AsyncResponse,View.OnClickListener {
+public class LoginActivity extends AppCompatActivity implements View.OnClickListener {
 
     EditText etEmail , etPassword ;
     Button btnLogin , btnRegister;
+
+    String email ;
 
     SharedPreferences loginstatus;
 
@@ -63,69 +68,158 @@ public class LoginActivity extends AppCompatActivity implements AsyncResponse,Vi
 
         Toast.makeText(this, "Fill The Form To Register", Toast.LENGTH_LONG).show();
 
-
         Intent gotoRegister = new Intent(LoginActivity.this, RegistrationActivity.class);
-        //myIntent.putExtra("key", value); //Optional parameters
+
         LoginActivity.this.startActivity(gotoRegister);
 
         LoginActivity.this.finish();
     }
 
-
-
-    @Override
-    public void processFinish(String eresult ) {
-
-        String status = new String();
-
-        try {
-            JSONObject json= (JSONObject) new JSONTokener(eresult).nextValue();
-            status = (String) json.get("status");
-
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-
-        if (status.equals("success")) {
-
-            Toast.makeText(this,"Login Successful", Toast.LENGTH_SHORT).show();
-
-            SaveSharedPreference.setUserName(getApplicationContext() ,etEmail.getText().toString() );
-
-            Intent gotoHome = new Intent(LoginActivity.this, HomeActivity.class);
-
-            LoginActivity.this.startActivity(gotoHome);
-
-            LoginActivity.this.finish();
-        }
-
-        else {
-
-            Toast.makeText(this, "Login Failed", Toast.LENGTH_LONG).show();
-
-        }
-
-
-
-
-
-
-    }
-
     @Override
     public void onClick(View v) {
 
-        HashMap postData = new HashMap();
-        postData.put("mobile", "android");
-        postData.put("txtEmail", etEmail.getText().toString());
-        postData.put("txtPassword", etPassword.getText().toString());
+        email = etEmail.getText().toString() ;
+        String password = etPassword.getText().toString()  ;
+        new PostAsync().execute(email, password);
 
-        PostResponseAsyncTask task = new PostResponseAsyncTask(this, postData);
-        //task.execute("http://192.168.1.2/client/login.php");
-        task.execute("http://chinmeshmanjrekar.co.nf/client/login.php");
+    }
 
 
+
+
+    class PostAsync extends AsyncTask<String, String, JSONObject> {
+        JSONParser jsonParser = new JSONParser();
+        private ProgressDialog pDialog;
+        private static final String LOGIN_URL = "http://chinmeshmanjrekar.co.nf/client/login.php";
+        //private static final String LOGIN_URL = "http://findphones.hostfree.pw/mail2/send.php";
+        private static final String TAG_SUCCESS = "success";
+        private static final String TAG_MESSAGE = "message";
+
+        @Override
+        protected void onPreExecute() {
+            pDialog = new ProgressDialog(LoginActivity.this);
+            pDialog.setMessage("Attempting login...");
+            pDialog.setIndeterminate(false);
+            pDialog.setCancelable(true);
+            pDialog.show();
+        }
+        @Override
+        protected JSONObject doInBackground(String... args) {
+            try {
+                HashMap<String, String> params = new HashMap<>();
+                params.put("email", args[0]);
+                params.put("password", args[1]);
+                Log.d("request", "starting");
+                JSONObject json = jsonParser.makeHttpRequest(
+                        LOGIN_URL, "POST", params);
+                if (json != null) {
+                    Log.d("JSON result", json.toString());
+                    return json;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        protected void onPostExecute(JSONObject json) {
+            int success = 0;
+            String message = "";
+            if (pDialog != null && pDialog.isShowing()) {
+                pDialog.dismiss();
+            }
+            if (json != null) {
+                Toast.makeText(LoginActivity.this, json.toString(), Toast.LENGTH_LONG ).show(); // must be commented finally
+                try {
+                    success = json.getInt(TAG_SUCCESS);
+                    message = json.getString(TAG_MESSAGE);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }else{
+
+                Toast.makeText(LoginActivity.this, "Network Error", Toast.LENGTH_LONG ).show();
+
+            }
+
+
+            if (success == 1) {
+
+                Log.d("Success!", message);
+
+                SaveSharedPreference.setUser(getApplicationContext() , email);
+
+                Intent gotoHome = new Intent(LoginActivity.this, HomeActivity.class);
+
+                LoginActivity.this.startActivity(gotoHome);
+
+                LoginActivity.this.finish();
+
+
+            }else{
+                Toast.makeText(LoginActivity.this, message , Toast.LENGTH_LONG ).show();
+                Log.d("Failure", message);
+            }
+        }
+    }
+
+
+
+    class GetAsync extends AsyncTask<String, String, JSONObject> {
+        JSONParser jsonParser = new JSONParser();
+        private ProgressDialog pDialog;
+        private static final String LOGIN_URL = "http://chinmeshmanjrekar.co.nf/client/login.php";
+        private static final String TAG_SUCCESS = "success";
+        private static final String TAG_MESSAGE = "message";
+        @Override
+        protected void onPreExecute() {
+            pDialog = new ProgressDialog(LoginActivity.this);
+            pDialog.setMessage("Attempting login...");
+            pDialog.setIndeterminate(false);
+            pDialog.setCancelable(true);
+            pDialog.show();
+        }
+        @Override
+        protected JSONObject doInBackground(String... args) {
+
+            try {
+                HashMap<String, String> params = new HashMap<>();
+                params.put("name", args[0]);
+                params.put("password", args[1]);
+                Log.d("request", "starting");
+                JSONObject json = jsonParser.makeHttpRequest(
+                        LOGIN_URL, "GET", params);
+                if (json != null) {
+                    Log.d("JSON result", json.toString());
+                    return json;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+        protected void onPostExecute(JSONObject json) {
+            int success = 0;
+            String message = "";
+            if (pDialog != null && pDialog.isShowing()) {
+                pDialog.dismiss();
+            }
+            if (json != null) {
+                Toast.makeText(LoginActivity.this, json.toString(),
+                        Toast.LENGTH_LONG).show();
+                try {
+                    success = json.getInt(TAG_SUCCESS);
+                    message = json.getString(TAG_MESSAGE);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (success == 1) {
+                Log.d("Success!", message);
+            }else{
+                Log.d("Failure", message);
+            }
+        }
     }
 
 }
