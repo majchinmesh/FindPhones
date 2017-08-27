@@ -115,7 +115,7 @@ public class HomeActivity extends AppCompatActivity  {
         });
 
     }
-
+http://i.imgur.com/LgjLI.jpg
     public  void refresh(){
 
         finish();
